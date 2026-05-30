@@ -15,7 +15,7 @@ warnings.filterwarnings( "ignore", module = "matplotlib\..*" )
 parser = argparse.ArgumentParser()
 parser.add_argument("-p","--path",type=str,default="")
 parser.add_argument("-i","--infer_steps",type=int,default=100)
-parser.add_argument("-t","--steps",default=2000)
+parser.add_argument("-t","--steps",type=int,default=2000)
 parser.add_argument("-o","--out_file",type=str,default="out_image.jpg")
 parser.add_argument("-v","--out_vid",type=str,default="video.mp4")
 
@@ -44,13 +44,15 @@ checkpoint = tf.train.Checkpoint(
 )
 checkpoint.restore(tf.train.latest_checkpoint(checkpoint_path)).expect_partial()
 
-numbs = generate_params(steps)
-prod = calc_p(numbs,steps)
+
+
+numbs = generate_params(steps,beta_end=0.005)
+alphas_bar = np.cumprod(numbs, axis=0)
+
 img,(width,height) = open_image(path)
 img = tf.expand_dims(img,0)
 
-#La invocamos con get_frames=True para devolver el proceso
-preds,pred = inference(img,net,numbs,infer_steps,get_frames=True)
+preds,pred = inference(img, net, numbs, alphas_bar, n_steps=steps,get_frames=True)
 
 fig = plt.figure()
 ax = fig.add_subplot()
@@ -64,12 +66,12 @@ if not out_path == "":
 
 
 def animate(i):
-    t = i%(infer_steps+1)
+    t = i%(steps+1)
     imk = tf.squeeze(preds[t])
     ax.clear()
-    ax.title("video_{}".format(out_path))
     ax.axis("off")
     ax.imshow(imk)
 
-ani = FuncAnimation(fig,animate,frames=infer_steps)
+ani = FuncAnimation(fig,animate,frames=steps)
 ani.save(pvid,"ffmpeg",fps=60)
+plt.show()

@@ -5,7 +5,7 @@ Implementation of SR3 to increase the resolution of images from 64x64 to 512x512
 <img src="image.png" width=250>
 </picture>
 <picture>
-<img src="out_image.jpg" width=250>
+<img src="output.jpg" width=250>
 </picture>
 
 The comments are in Spanish.

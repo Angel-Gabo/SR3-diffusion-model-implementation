@@ -12,7 +12,7 @@ import cv2
 parser = argparse.ArgumentParser()
 parser.add_argument("-p","--path",type=str,default="")
 parser.add_argument("-i","--infer_steps",type=int,default=100)
-parser.add_argument("-t","--steps",default=2000)
+parser.add_argument("-t","--steps",type=int,default=2000)
 parser.add_argument("-o","--out_file",type=str,default="out_image.jpg")
 
 args = parser.parse_args()
@@ -30,10 +30,11 @@ else:
         sys.exit()
 
 
-
+print("Creando modelo...")
 #Hacemos el modelo
 net = Net()
 
+print("Cargando checkpoints...")
 #Cargamos los pesos del modelo
 checkpoint_path = "checkpoints/"
 checkpoint = tf.train.Checkpoint(
@@ -41,12 +42,16 @@ checkpoint = tf.train.Checkpoint(
 )
 checkpoint.restore(tf.train.latest_checkpoint(checkpoint_path)).expect_partial()
 
-numbs = generate_params(steps)
-prod = calc_p(numbs,steps)
+print("Checkpoints restaurados... iniciando inferencia")
+
+numbs = generate_params(steps,beta_start=1e-4,beta_end=0.002)
+alphas_bar = np.cumprod(numbs, axis=0)
+
 img,(width,height) = open_image(path)
 img = tf.expand_dims(img,0)
 
-pred = inference(img,net,numbs,infer_steps)
+pred = inference(img, net, numbs, alphas_bar, n_steps=steps)
+#pred = inference(img,net,numbs,infer_steps)
 out_img = tf.squeeze(pred)
 
 if not out_path == "":
